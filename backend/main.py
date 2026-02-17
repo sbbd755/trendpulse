@@ -6,9 +6,15 @@ import asyncio
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from twikit import Client
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 # --- Configuration ---
 USERNAME = os.environ.get("X_USERNAME", "roshnibegamm")
@@ -344,11 +350,18 @@ async def get_trends(force: bool = False, filter: str | None = None):
     return {"tweets": [], "cached": False, "fetched_at": now}
 
 
-@app.get("/")
-async def root():
-    return {"app": "TrendPulse", "status": "running"}
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# --- Serve React frontend ---
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR / "static"), name="static-assets")
+
+    @app.get("/{path:path}")
+    async def serve_frontend(path: str):
+        file_path = STATIC_DIR / path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(STATIC_DIR / "index.html")
