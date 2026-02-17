@@ -48,30 +48,47 @@ client = Client(language="en-US")
 
 async def init_client():
     """Login or load cookies on startup."""
+    print(f"[TrendPulse] CWD: {os.getcwd()}")
+    print(f"[TrendPulse] X_COOKIES_JSON set: {bool(os.environ.get('X_COOKIES_JSON'))}")
+
     # Support cookies via env var (for Railway/cloud deployment)
     cookies_env = os.environ.get("X_COOKIES_JSON")
     if cookies_env:
-        with open(COOKIES_FILE, "w") as f:
-            f.write(cookies_env)
-        print("[TrendPulse] Wrote cookies from env var.")
+        try:
+            with open(COOKIES_FILE, "w") as f:
+                f.write(cookies_env)
+            print(f"[TrendPulse] Wrote cookies to {os.path.abspath(COOKIES_FILE)}")
+        except Exception as e:
+            print(f"[TrendPulse] Failed to write cookies file: {e}")
 
     if os.path.exists(COOKIES_FILE):
-        client.load_cookies(COOKIES_FILE)
-        print("[TrendPulse] Loaded cookies from file.")
+        try:
+            client.load_cookies(COOKIES_FILE)
+            print("[TrendPulse] Loaded cookies from file.")
+        except Exception as e:
+            print(f"[TrendPulse] Failed to load cookies: {e}")
     else:
-        print("[TrendPulse] Logging in to X...")
-        await client.login(
-            auth_info_1=USERNAME,
-            auth_info_2=EMAIL,
-            password=PASSWORD,
-        )
-        client.save_cookies(COOKIES_FILE)
-        print("[TrendPulse] Login successful, cookies saved.")
+        print(f"[TrendPulse] No cookies file at {os.path.abspath(COOKIES_FILE)}")
+        try:
+            print("[TrendPulse] Logging in to X...")
+            await client.login(
+                auth_info_1=USERNAME,
+                auth_info_2=EMAIL,
+                password=PASSWORD,
+            )
+            client.save_cookies(COOKIES_FILE)
+            print("[TrendPulse] Login successful, cookies saved.")
+        except Exception as e:
+            print(f"[TrendPulse] Login failed: {e}")
+            print("[TrendPulse] Starting without auth — API will return empty results.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_client()
+    try:
+        await init_client()
+    except Exception as e:
+        print(f"[TrendPulse] Startup error (non-fatal): {e}")
     yield
 
 
