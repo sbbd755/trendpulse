@@ -344,6 +344,11 @@ async def get_trends(force: bool = False, filter: str | None = None):
     return {"tweets": [], "cached": False, "fetched_at": now}
 
 
+@app.get("/")
+async def root():
+    return {"app": "TrendPulse", "status": "running"}
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
