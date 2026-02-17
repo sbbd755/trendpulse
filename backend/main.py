@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import time
 import asyncio
 from datetime import datetime, timezone
@@ -47,6 +48,13 @@ client = Client(language="en-US")
 
 async def init_client():
     """Login or load cookies on startup."""
+    # Support cookies via env var (for Railway/cloud deployment)
+    cookies_env = os.environ.get("X_COOKIES_JSON")
+    if cookies_env:
+        with open(COOKIES_FILE, "w") as f:
+            f.write(cookies_env)
+        print("[TrendPulse] Wrote cookies from env var.")
+
     if os.path.exists(COOKIES_FILE):
         client.load_cookies(COOKIES_FILE)
         print("[TrendPulse] Loaded cookies from file.")
